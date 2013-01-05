@@ -1,0 +1,18 @@
+package com.phodev.android.tools.viewpage;
+
+import android.view.View;
+import android.view.ViewGroup;
+
+/**
+ * View Wrap Config
+ * 
+ * @author skg
+ * 
+ */
+public interface ViewWraperConfig {
+	public boolean needCconfigWrapView();
+
+	public boolean isWrapViewShowable();
+
+	public boolean configWrapView(ViewGroup parent, View configView);
+}
