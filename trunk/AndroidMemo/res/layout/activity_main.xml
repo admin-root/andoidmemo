@@ -1,14 +1,35 @@
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
     tools:context=".MainActivity" >
+
+    <com.phodev.android.tools.widget.TextViewWithAlphaLineSpace
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="#F00"
+        android:lineSpacingExtra="10sp"
+        android:text="这事一个蛋疼的需求,坑爹的需求,变态需求. 这事一个蛋疼的需求,坑爹的需求,变态需求.这事一个蛋疼的需求,坑爹的需求,变态需求. 这事一个蛋疼的需求,坑爹的需求,变态需求 "
+        android:textColor="#FFF" />
+
+    <com.phodev.android.tools.widget.TextViewWithAlphaLineSpace
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/note_bg"
+        android:lineSpacingExtra="10sp"
+        android:text="这事一个蛋疼的需求,坑爹的需求,变态需求. 这事一个蛋疼的需求,坑爹的需求,变态需求.这事一个蛋疼的需求,坑爹的需求,变态需求. 这事一个蛋疼的需求,坑爹的需求,变态需求 "
+        android:textColor="#FFe3167d" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_centerHorizontal="true"
-        android:layout_centerVertical="true"
-        android:text="@string/hello_world" />
+        android:layout_marginTop="20dp"
+        android:text="下面是原图" />
 
-</RelativeLayout>
+    <ImageView
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:src="@drawable/note_bg" />
+
+</LinearLayout>
