@@ -10,6 +10,7 @@ import android.content.res.Resources;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.Paint;
+import android.graphics.Paint.FontMetrics;
 import android.graphics.Path;
 import android.graphics.PorterDuff.Mode;
 import android.graphics.Rect;
@@ -26,20 +27,20 @@ import android.widget.TextView;
  * @author skg
  * 
  */
-public class TextViewWithAlphaLineSpace extends TextView {
+public class AlphaLineSpaceTextView extends TextView {
 	// as thin as possible
-	private boolean thinStyle = false;
+	private boolean thinStyle = true;
 
-	public TextViewWithAlphaLineSpace(Context context, AttributeSet attrs,
+	public AlphaLineSpaceTextView(Context context, AttributeSet attrs,
 			int defStyle) {
 		super(context, attrs, defStyle);
 	}
 
-	public TextViewWithAlphaLineSpace(Context context, AttributeSet attrs) {
+	public AlphaLineSpaceTextView(Context context, AttributeSet attrs) {
 		super(context, attrs);
 	}
 
-	public TextViewWithAlphaLineSpace(Context context) {
+	public AlphaLineSpaceTextView(Context context) {
 		super(context);
 	}
 
@@ -63,11 +64,13 @@ public class TextViewWithAlphaLineSpace extends TextView {
 			Layout layout = getLayout();
 			if (wrap != null && layout != null) {
 				Paint paint = layout.getPaint();
-				if (layout.getSpacingAdd() > 0 && paint != null) {
+				float spacingAdd = layout.getSpacingAdd();
+				if (spacingAdd > 0 && paint != null) {
 					int linesCount = getLineCount();
 					int maxWith = getWidth();
 					int saveCount = canvas.save();
-					int descent = (int) (paint.getFontMetrics().descent + 0.5f);
+					FontMetrics fm = paint.getFontMetrics();
+					int descent = (int) (fm.descent + 0.5f);
 					int topOffset;
 					int bottomOffset;
 					Path path = new Path();
@@ -79,16 +82,22 @@ public class TextViewWithAlphaLineSpace extends TextView {
 						path.lineTo(0, descent);
 						path.close();
 						canvas.clipPath(path, Op.DIFFERENCE);
+						//
 						topOffset = -descent;
 						bottomOffset = 0;
 					} else {
-						topOffset = -descent * 2;
-						bottomOffset = descent;
+						topOffset = -descent - 2;
+						bottomOffset = 2;
 					}
 					// clip every line bottom
 					for (int i = 0; i < linesCount; i++) {
 						int top = layout.getLineBaseline(i) - topOffset;
 						int bottom = layout.getLineBottom(i) - bottomOffset;
+						/*
+						 * Log.d("ttt", "---- baseline:" +
+						 * layout.getLineBaseline(i) + " bottom:" +
+						 * layout.getLineBottom(i) + "descent:" + descent);
+						 */
 						path.reset();
 						path.moveTo(0, top);
 						path.lineTo(maxWith, top);
