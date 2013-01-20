@@ -4,15 +4,15 @@
     android:layout_height="fill_parent"
     android:orientation="vertical" >
 
-    <com.phodev.android.tools.widget.TextViewWithAlphaLineSpace
+    <com.phodev.android.tools.widget.AlphaLineSpaceTextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:background="#F00"
-        android:lineSpacingExtra="10sp"
+        android:lineSpacingExtra="1dp"
         android:text="这事一个蛋疼的需求,坑爹的需求,变态需求. 这事一个蛋疼的需求,坑爹的需求,变态需求.这事一个蛋疼的需求,坑爹的需求,变态需求. 这事一个蛋疼的需求,坑爹的需求,变态需求 "
-        android:textColor="#FFF" />
+        android:textColor="#FF0" />
 
-    <com.phodev.android.tools.widget.TextViewWithAlphaLineSpace
+    <com.phodev.android.tools.widget.AlphaLineSpaceTextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:background="@drawable/note_bg"
