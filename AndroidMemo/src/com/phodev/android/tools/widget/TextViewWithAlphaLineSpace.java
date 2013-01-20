@@ -27,6 +27,8 @@ import android.widget.TextView;
  * 
  */
 public class TextViewWithAlphaLineSpace extends TextView {
+	// as thin as possible
+	private boolean thinStyle = false;
 
 	public TextViewWithAlphaLineSpace(Context context, AttributeSet attrs,
 			int defStyle) {
@@ -66,11 +68,27 @@ public class TextViewWithAlphaLineSpace extends TextView {
 					int maxWith = getWidth();
 					int saveCount = canvas.save();
 					int descent = (int) (paint.getFontMetrics().descent + 0.5f);
-					// clip
+					int topOffset;
+					int bottomOffset;
 					Path path = new Path();
+					if (thinStyle) {
+						// clip first line top
+						path.moveTo(0, 0);
+						path.lineTo(maxWith, 0);
+						path.lineTo(maxWith, descent);
+						path.lineTo(0, descent);
+						path.close();
+						canvas.clipPath(path, Op.DIFFERENCE);
+						topOffset = -descent;
+						bottomOffset = 0;
+					} else {
+						topOffset = -descent * 2;
+						bottomOffset = descent;
+					}
+					// clip every line bottom
 					for (int i = 0; i < linesCount; i++) {
-						int top = layout.getLineBaseline(i) + descent;
-						int bottom = layout.getLineBottom(i);
+						int top = layout.getLineBaseline(i) - topOffset;
+						int bottom = layout.getLineBottom(i) - bottomOffset;
 						path.reset();
 						path.moveTo(0, top);
 						path.lineTo(maxWith, top);
