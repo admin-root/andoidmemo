@@ -58,6 +58,10 @@ public class PagingAdapter<DataType> extends MultiPageAdapter implements
 		updateDataInfo();
 	}
 
+	public List<DataType> getData() {
+		return this.mData;
+	}
+
 	private int updateDataInfo() {
 		mPageCount = 0;
 		if (mData != null && mPageItemCount > 0) {
@@ -162,7 +166,8 @@ public class PagingAdapter<DataType> extends MultiPageAdapter implements
 	@Override
 	public DataType getData(int pageIndex, int position) {
 		int gloablePosition = getDataStart(pageIndex) + position;
-		if (mData == null || gloablePosition >= mData.size()) {
+		if (mData == null || gloablePosition >= mData.size()
+				|| gloablePosition < 0) {
 			return null;
 		}
 		return mData.get(gloablePosition);
@@ -219,11 +224,13 @@ public class PagingAdapter<DataType> extends MultiPageAdapter implements
 
 	@Override
 	public int getPageItemCount(int pageIndex) {
-		int pageItemCount = getDataEnd(pageIndex) - getDataStart(pageIndex);
-		pageItemCount++;
-		if (pageItemCount < 0) {
+		int ps = getDataStart(pageIndex);
+		int pe = getDataEnd(pageIndex);
+		if (ps < 0 || pe < 0 || pe < ps) {
 			return 0;
 		}
+		int pageItemCount = pe - ps;
+		pageItemCount++;
 		return pageItemCount;
 	}
 
