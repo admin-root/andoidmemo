@@ -81,7 +81,11 @@ public class AlphaLineSpaceTextView extends TextView {
 						path.lineTo(maxWith, descent);
 						path.lineTo(0, descent);
 						path.close();
-						canvas.clipPath(path, Op.DIFFERENCE);
+						try {
+							canvas.clipPath(path, Op.DIFFERENCE);
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
 						//
 						topOffset = -descent;
 						bottomOffset = 0;
@@ -104,7 +108,11 @@ public class AlphaLineSpaceTextView extends TextView {
 						path.lineTo(maxWith, bottom);
 						path.lineTo(0, bottom);
 						path.close();
-						canvas.clipPath(path, Op.DIFFERENCE);
+						try {
+							canvas.clipPath(path, Op.DIFFERENCE);
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
 					}
 					//
 					wrap.draw(canvas);
