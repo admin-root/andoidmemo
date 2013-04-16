@@ -60,6 +60,7 @@ public class BlockDownloader implements Runnable {
 			}
 			return;
 		}
+		final String sourceUrl = mBlock.getSourceUrl();
 		//
 		File file = mBlock.getOutFile();
 		if (file == null) {
@@ -74,43 +75,42 @@ public class BlockDownloader implements Runnable {
 				return;
 			}
 		}
-		URL url = mBlock.getSourceURL();
-		if (url == null) {
-			try {
-				url = new URL(mBlock.getSourceUrl());
-			} catch (MalformedURLException e) {
-				e.printStackTrace();
-				makeTerminationOnError(BlockRunnerListener.ERROR_INVALID_BALOCK);
-				return;
-			}
+		URL url;
+		try {
+			url = new URL(sourceUrl);
+		} catch (MalformedURLException e) {
+			e.printStackTrace();
+			makeTerminationOnError(BlockRunnerListener.ERROR_INVALID_BALOCK);
+			return;
 		}
 		// check end--------------
 		//
 		try {
 			HttpURLConnection http = (HttpURLConnection) url.openConnection();
-			String referer = mBlock.getSourceUrl();
-			Utils.configBlockHeader(http, referer, startPos, endPos);
+			Utils.configBlockHeader(http, sourceUrl, startPos, endPos);
 			if (Constants.DEBUG) {
 				log("set block range:" + startPos + "-" + endPos);
 			}
 			RandomAccessFile outfile = new RandomAccessFile(file, out_file_mode);
 			outfile.seek(startPos);
 			//
-			int size = 0;
+			int read = 0;
 			byte[] buffer = new byte[buffer_size];
 			InputStream is = http.getInputStream();
-			while (!interrupt && (size = is.read(buffer, 0, buffer_size)) != -1) {
+			Utils.debugPrintResponseHeader(http, TAG);
+			Log.e(TAG, "content encoding:" + http.getContentEncoding());
+			while (!interrupt && (read = is.read(buffer, 0, buffer_size)) != -1) {
 				if (interrupt) {
 					break;
 				}
-				outfile.write(buffer, 0, size);
-				mBlock.updateBlock(mBlock.getCurrent() + size);
-//				if (Constants.DEBUG) {
-//					log("block Increase current:" + mBlock.getCurrent());
-//				}
+				outfile.write(buffer, 0, read);
+				mBlock.updateBlock(mBlock.getLoadedSize() + read);
+				// if (Constants.DEBUG) {
+				// log("block Increase current:" + mBlock.getCurrent());
+				// }
 				// 通知下载进度
 				if (mListener != null) {
-					mListener.onBlockIncrease(mBlock);
+					mListener.onBlockIncrease(mBlock, read);
 				}
 			}
 			outfile.close();
@@ -144,7 +144,7 @@ public class BlockDownloader implements Runnable {
 		public final static int ERROR_INVALID_BALOCK = 1;
 		public final static int ERROR_NET_WORK_BAK = 2;
 
-		public void onBlockIncrease(DownloadBlock block);
+		public void onBlockIncrease(DownloadBlock block, int increase);
 
 		public void onBlockLoadDone(DownloadBlock block);
 
@@ -152,7 +152,7 @@ public class BlockDownloader implements Runnable {
 	}
 
 	void log(Object msg) {
-		int blockId = -1;
+		String blockId = null;
 		String url = null;
 		if (mBlock != null) {
 			blockId = mBlock.getId();

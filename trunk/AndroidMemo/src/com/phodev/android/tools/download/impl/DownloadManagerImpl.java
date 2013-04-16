@@ -1,9 +1,16 @@
 package com.phodev.android.tools.download.impl;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
+import android.content.Context;
+
+import com.phodev.android.tools.download.Constants;
 import com.phodev.android.tools.download.DownloadFile;
 import com.phodev.android.tools.download.DownloadManager;
 import com.phodev.android.tools.download.impl.DownloadTask.DownloadTaskListener;
@@ -11,18 +18,49 @@ import com.phodev.android.tools.download.impl.DownloadTask.DownloadTaskListener;
 /**
  * 任务下载的具体实现
  * 
- * @author skg
- * 
  */
 public class DownloadManagerImpl implements DownloadManager {
+	private Context mContext;
+	private Map<String, DownloadTask> tasks = new ConcurrentHashMap<String, DownloadTask>();
+	private List<DownloadFile> loadingFiles = new ArrayList<DownloadFile>();
+	private List<DownloadFile> loadCompleteFiles = new ArrayList<DownloadFile>();
+	private DownloadRecorder recorder;
+	//
+	public static final int MAX_CORE_POOL_SIZE = Constants.thread_count + 1;// 一直保留的线程数
+	public static final int MAX_POOL_SIZE = 50;
+	public static final int KEEP_ALIVE_TIME = 60;// s//允许空闲线程时间
+	private final static ThreadPoolExecutor executor = new ThreadPoolExecutor(
+			MAX_CORE_POOL_SIZE, MAX_POOL_SIZE, KEEP_ALIVE_TIME,
+			TimeUnit.SECONDS, new SynchronousQueue<Runnable>());
 
-	private DownloadRecorder mRecordManager;
-
-	public DownloadManagerImpl(DownloadRecorder recordManager) {
-		mRecordManager = recordManager;
+	public DownloadManagerImpl(Context context) {
+		mContext = context;
+		recorder = DownloadRecorder.getInstance();
+		createTask(loadCompleteFiles, tasks);
 	}
 
-	private Map<Long, DownloadTask> tasks = new ConcurrentHashMap<Long, DownloadTask>();
+	/**
+	 * 创建Task
+	 * 
+	 * @param files
+	 * @param out
+	 */
+	private void createTask(List<DownloadFile> files,
+			Map<String, DownloadTask> out) {
+		if (files == null || files.isEmpty() || out == null) {
+			return;
+		}
+		for (DownloadFile f : files) {
+			if (f != null) {
+				String k = f.getSourceUrl();
+				DownloadTask v = new DownloadTask(mContext, executor, f,
+						taskListener);
+				if (k != null && v != null) {
+					out.put(k, v);
+				}
+			}
+		}
+	}
 
 	@Override
 	public boolean start(String url) {
@@ -31,13 +69,11 @@ public class DownloadManagerImpl implements DownloadManager {
 
 	@Override
 	public boolean startAll() {
-		// TODO Auto-generated method stub
 		return false;
 	}
 
 	@Override
 	public boolean stop(String url) {
-		// TODO Auto-generated method stub
 		return false;
 	}
 
@@ -83,23 +119,25 @@ public class DownloadManagerImpl implements DownloadManager {
 
 	}
 
-	private DownloadTaskListener downloadTaskListener = new DownloadTaskListener() {
+	private DownloadTaskListener taskListener = new DownloadTaskListener() {
 
 		@Override
-		public void onDownloadIncrease(DownloadTask task, long fileSize,
-				long loadedSize, long speed) {
-			// 下载任务进度变化，通常更新UI回调
+		public void onDownloadIncrease(DownloadFile file, long loadedSize,
+				long speed) {
 		}
 
 		@Override
-		public void onDownloadDone(DownloadTask task) {
-
+		public void onDownloadDone(DownloadFile file) {
 		}
 
 		@Override
-		public void onDownloadFailed(DownloadTask task) {
-
+		public void onDownloadFailed(DownloadFile file) {
 		}
 
 	};
+
+	class DownloadFileMap {
+		private List<DownloadFile> loadingFiles = new ArrayList<DownloadFile>();
+		private List<DownloadFile> loadCompleteFiles = new ArrayList<DownloadFile>();
+	}
 }
