@@ -2,24 +2,14 @@ package com.phodev.android.tools.download;
 
 /**
  * 下载文件描述信息
- * 
- * @author skg
- * 
  */
 public class DownloadFile {
-	private long id;
+	public final static int status_download_complete = 1;
+	public final static int status_download_unfinished = 2;
 	private String sourceUrl;
 	private String fileName;
 	private int status;
 	private long fileSize;
-
-	public long getId() {
-		return id;
-	}
-
-	public void setId(long id) {
-		this.id = id;
-	}
 
 	public String getSourceUrl() {
 		return sourceUrl;
@@ -52,5 +42,4 @@ public class DownloadFile {
 	public void setFileSize(long fileSize) {
 		this.fileSize = fileSize;
 	}
-
 }

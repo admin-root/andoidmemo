@@ -1,7 +1,8 @@
 package com.phodev.android.tools.download.impl;
 
 import java.io.File;
-import java.net.URL;
+
+import com.phodev.android.tools.download.DownloadFile;
 
 /**
  * 下载块
@@ -10,42 +11,39 @@ import java.net.URL;
  * 
  */
 public class DownloadBlock {
-	private int id;
-	private DownloadTask downloadTask;
-	private URL sourceURL;
+	private String id;
+	private DownloadFile downloadFile;
 	private String sourceUrl;
 	private File outFile;
 	private long start;
 	private long end;
-	private long current;
+	private long loadedSize;
 
-	public DownloadBlock(int blockId, DownloadTask task, URL sourceURL,
-			String sourceUrl, File outFile, long start, long end, long current) {
-		this.id = blockId;
-		this.downloadTask = task;
-		this.sourceURL = sourceURL;
+	public DownloadBlock(DownloadFile dFile, String sourceUrl, File outFile,
+			long start, long end, long loadedSize) {
+		this.downloadFile = dFile;
 		this.sourceUrl = sourceUrl;
 		this.outFile = outFile;
 		this.start = start;
 		this.end = end;
-		this.current = current;
+		this.loadedSize = loadedSize;
 	}
 
-	protected void updateBlock(long current) {
+	protected void updateBlock(long loadedSize) {
 		// 更新自己的进度
-		this.current = current;
+		this.loadedSize = loadedSize;
 	}
 
-	public int getId() {
+	public void setId(String id) {
+		this.id = id;
+	}
+
+	public String getId() {
 		return id;
 	}
 
-	public DownloadTask getDownloadTask() {
-		return downloadTask;
-	}
-
-	public URL getSourceURL() {
-		return sourceURL;
+	public DownloadFile getDownloadFile() {
+		return downloadFile;
 	}
 
 	public String getSourceUrl() {
@@ -64,8 +62,8 @@ public class DownloadBlock {
 		return end;
 	}
 
-	public long getCurrent() {
-		return current;
+	public long getLoadedSize() {
+		return loadedSize;
 	}
 
 }

@@ -1,10 +1,12 @@
 package com.phodev.android.tools.download;
 
+import java.io.File;
 import java.net.HttpURLConnection;
 import java.net.ProtocolException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import android.os.Environment;
 import android.util.Log;
 
 public class Utils {
@@ -18,6 +20,7 @@ public class Utils {
 		}
 		configCommonHeader(conn, referer);
 		conn.setRequestProperty("Range", "bytes=" + startPos + "-" + endPos);
+		conn.setRequestProperty("Accept-Encoding", "gzip,deflate");
 	}
 
 	public static void configCommonHeader(HttpURLConnection conn, String referer) {
@@ -60,4 +63,47 @@ public class Utils {
 			}
 		}
 	}
+
+	public static File getDownloadDir() {
+		String dirPath = Environment.getExternalStorageDirectory()
+				.getAbsolutePath()
+				+ File.separator
+				+ Constants.relative_download_path;
+		File dir = new File(dirPath);
+		if (!dir.exists()) {
+			dir.mkdirs();
+		}
+		return dir;
+	}
+
+	public static File createDownloadOutFile(String fileName) {
+		if (fileName == null || fileName.length() <= 0) {
+			return null;
+		}
+		return new File(getDownloadDir().getAbsolutePath() + File.separator
+				+ fileName);
+	}
+
+	public static String createDownloadOutFilePath(String fileName) {
+		if (fileName == null || fileName.length() <= 0) {
+			return null;
+		}
+		return getDownloadDir().getAbsolutePath() + File.separator + fileName;
+	}
+	//
+	// public static File createFile(String fileName, boolean tryCreate) {
+	// String fileFullPath = makeAbsolutePath(fileName);
+	// if (fileFullPath == null) {
+	// return null;
+	// }
+	// File file = new File(makeAbsolutePath(fileName));
+	// if (tryCreate && !file.exists()) {
+	// try {
+	// file.createNewFile();
+	// } catch (IOException e) {
+	// e.printStackTrace();
+	// }
+	// }
+	// return file;
+	// }
 }
