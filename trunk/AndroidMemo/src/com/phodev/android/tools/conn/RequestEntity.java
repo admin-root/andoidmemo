@@ -2,6 +2,7 @@ package com.phodev.android.tools.conn;
 
 import java.io.File;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -34,6 +35,7 @@ public class RequestEntity {
 	private RequestMethod requestMethod;
 	private int resultCode;
 	private int requestId;
+	private String defCharset;
 	private Object mTag;
 
 	private RequestEntity() {
@@ -72,11 +74,20 @@ public class RequestEntity {
 	}
 
 	public void setPostEntitiy(List<NameValuePair> postValues) {
+		setPostEntitiy(postValues, defCharset);
+	}
+
+	public void setPostEntitiy(List<NameValuePair> postValues, String charset) {
 		try {
-			postEntity = new UrlEncodedFormEntity(postValues);
+			postEntity = new UrlEncodedFormEntity(postValues, charset);
 		} catch (UnsupportedEncodingException e) {
 			e.printStackTrace();
 		}
+	}
+
+	public void setPostEntitiy(List<NameValuePair> postValues,
+			Map<String, File> files) {
+		setPostEntitiy(postValues, defCharset, files);
 	}
 
 	/**
@@ -88,11 +99,23 @@ public class RequestEntity {
 	 * 
 	 * @param postValues
 	 * @param files
+	 * @param charset
 	 */
-	public void setPostEntitiy(List<NameValuePair> postValues,
+	public void setPostEntitiy(List<NameValuePair> postValues, String charset,
 			Map<String, File> files) {
-		MultipartEntity entity = new MultipartEntity(
-				HttpMultipartMode.BROWSER_COMPATIBLE);
+		Charset c = null;
+		try {
+			c = Charset.forName(charset);
+		} catch (Exception e) {
+			c = null;
+		}
+		MultipartEntity entity;
+		HttpMultipartMode mode = HttpMultipartMode.BROWSER_COMPATIBLE;
+		if (c == null) {
+			entity = new MultipartEntity(mode);
+		} else {
+			entity = new MultipartEntity(mode, null, c);
+		}
 		postEntity = entity;
 		if (postValues != null) {
 			for (NameValuePair v : postValues) {
@@ -113,9 +136,9 @@ public class RequestEntity {
 		}
 	}
 
-	public void setPostEntitiy(String querryString) {
+	public void setPostEntitiy(String querryString, String charset) {
 		try {
-			postEntity = new StringEntity(querryString);
+			postEntity = new StringEntity(querryString, charset);
 		} catch (UnsupportedEncodingException e) {
 			e.printStackTrace();
 		}
@@ -171,6 +194,14 @@ public class RequestEntity {
 		this.requestId = requestId;
 	}
 
+	public String getDefaultCharset() {
+		return defCharset;
+	}
+
+	public void setDefaultCharset(String charset) {
+		this.defCharset = charset;
+	}
+
 	public void setTag(Object tag) {
 		mTag = tag;
 	}
@@ -196,6 +227,7 @@ public class RequestEntity {
 		rawResponse = null;
 		requestMethod = null;
 		resultCode = 0;
+		defCharset = null;
 		if (recyleList.size() < 6) {
 			recyleList.add(this);
 		}
