@@ -115,23 +115,35 @@ public class ConnectionHelper {
 		httpExecute(entity);
 	}
 
+	public void httpPost(String url, int requestId,
+			List<NameValuePair> postValues, RequestReceiver rr) {
+		String n = null;
+		httpPost(url, requestId, postValues, n, rr);
+	}
+
 	/**
 	 * Post方式发送数据
 	 * 
 	 * @param url
 	 * @param requestId
 	 * @param postValues
+	 * @param charset
 	 * @param rr
 	 */
 	public void httpPost(String url, int requestId,
-			List<NameValuePair> postValues, RequestReceiver rr) {
+			List<NameValuePair> postValues, String charset, RequestReceiver rr) {
 		RequestEntity entity = RequestEntity.obtain();
 		entity.setUrl(url);
 		entity.setRequestReceiver(rr);
-		entity.setPostEntitiy(postValues);
+		entity.setPostEntitiy(postValues, charset);
 		entity.setMethod(RequestMethod.POST);
 		entity.setRequestId(requestId);
 		httpExecute(entity);
+	}
+
+	public void httpPost(String url, int requestId, String queryString,
+			RequestReceiver rr) {
+		httpPost(url, requestId, queryString, null, rr);
 	}
 
 	/**
@@ -140,17 +152,24 @@ public class ConnectionHelper {
 	 * @param url
 	 * @param requestId
 	 * @param queryString
+	 * @param charset
 	 * @param rr
 	 */
 	public void httpPost(String url, int requestId, String queryString,
-			RequestReceiver rr) {
+			String charset, RequestReceiver rr) {
 		RequestEntity entity = RequestEntity.obtain();
 		entity.setUrl(url);
 		entity.setRequestReceiver(rr);
-		entity.setPostEntitiy(queryString);
+		entity.setPostEntitiy(queryString, charset);
 		entity.setMethod(RequestMethod.POST);
 		entity.setRequestId(requestId);
 		httpExecute(entity);
+	}
+
+	public void httpPost(String url, int requestId,
+			List<NameValuePair> postValues, Map<String, File> files,
+			RequestReceiver rr) {
+		httpPost(url, requestId, postValues, null, files, rr);
 	}
 
 	/**
@@ -163,12 +182,12 @@ public class ConnectionHelper {
 	 * @param rr
 	 */
 	public void httpPost(String url, int requestId,
-			List<NameValuePair> postValues, Map<String, File> files,
-			RequestReceiver rr) {
+			List<NameValuePair> postValues, String charset,
+			Map<String, File> files, RequestReceiver rr) {
 		RequestEntity entity = RequestEntity.obtain();
 		entity.setUrl(url);
 		entity.setRequestReceiver(rr);
-		entity.setPostEntitiy(postValues, files);
+		entity.setPostEntitiy(postValues, charset, files);
 		entity.setMethod(RequestMethod.POST_WITH_FILE);
 		entity.setRequestId(requestId);
 		httpExecute(entity);
@@ -213,8 +232,8 @@ public class ConnectionHelper {
 				HttpResponse response = httpClient.execute(httpRequest);
 				statusCode = response.getStatusLine().getStatusCode();
 				if (statusCode == HttpStatus.SC_OK) {
-					rEntity.setRawResponse(EntityUtils.toString(response
-							.getEntity()));
+					rEntity.setRawResponse(EntityUtils.toString(
+							response.getEntity(), rEntity.getDefaultCharset()));
 					customResultCode = RequestReceiver.RESULT_STATE_OK;
 				} else {
 					customResultCode = RequestReceiver.RESULT_STATE_ERROR;
