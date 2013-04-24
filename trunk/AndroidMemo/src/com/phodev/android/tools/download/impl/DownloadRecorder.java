@@ -1,6 +1,5 @@
 package com.phodev.android.tools.download.impl;
 
-import java.io.File;
 import java.util.List;
 import java.util.UUID;
 
@@ -55,19 +54,11 @@ public class DownloadRecorder {
 		db.beginTransaction();
 		checkDeleteExistBlock(db, sourceUrl);
 		ContentValues cv = new ContentValues();
-		final String defOutPath = null;
 		for (DownloadBlock b : blockGroup) {
-			String outPath;
-			File file = b.getOutFile();
-			if (file == null) {
-				outPath = defOutPath;
-			} else {
-				outPath = file.getAbsolutePath();
-			}
 			String uuid = UUID.randomUUID().toString();
 			b.setId(uuid);
 
-			copy(cv, b, outPath);
+			copy(cv, b);
 			db.insert(TABLE_DownloadBlock._table_name, null, cv);
 
 			cv.clear();
@@ -104,7 +95,10 @@ public class DownloadRecorder {
 			sb.append(TABLE_DownloadBlock._table_name);
 			sb.append(" where ");
 			sb.append(TABLE_DownloadBlock.file_source_url);
+			sb.append(" = ");
+			sb.append('\'');
 			sb.append(sourceUrl);
+			sb.append('\'');
 			String sql = sb.toString();
 			if (Constants.DEBUG) {
 				reportSQL(sql, "checkDeleteExistBlock");
@@ -133,7 +127,7 @@ public class DownloadRecorder {
 		String[] args = new String[1];
 		for (DownloadBlock b : blocks) {
 			args[0] = b.getId();
-			copy(cv, b, b.getSourceUrl());
+			copy(cv, b);
 			db.update(TABLE_DownloadBlock._table_name, cv, whereClause, args);
 		}
 		db.setTransactionSuccessful();
@@ -153,7 +147,7 @@ public class DownloadRecorder {
 		String whereClause = TABLE_DownloadBlock._ID + "=?";
 		String[] args = new String[1];
 		args[0] = block.getId();
-		copy(cv, block, block.getSourceUrl());
+		copy(cv, block);
 		db.update(TABLE_DownloadBlock._table_name, cv, whereClause, args);
 		askCloseDatabase(db);
 	}
@@ -173,7 +167,9 @@ public class DownloadRecorder {
 		sb.append(" where ");
 		sb.append(TABLE_DownloadBlock.file_source_url);
 		sb.append(" = ");
+		sb.append('\'');
 		sb.append(sourceUrl);
+		sb.append('\'');
 		String sql = sb.toString();
 		if (Constants.DEBUG) {
 			reportSQL(sql, "getBocks");
@@ -186,15 +182,10 @@ public class DownloadRecorder {
 			int index_end = c.getColumnIndex(TABLE_DownloadBlock.block_end);
 			int index_loadSize = c
 					.getColumnIndex(TABLE_DownloadBlock.block_loaded_size);
-			int index_OutFilePath = c
-					.getColumnIndex(TABLE_DownloadBlock.out_file_path);
-			String filePath = c.getString(index_OutFilePath);
-			File blockOutFile = new File(filePath);
 			do {
 				DownloadBlock b = new DownloadBlock(//
 						blockDownloadFile,//
 						sourceUrl,//
-						blockOutFile,//
 						c.getLong(index_start),//
 						c.getLong(index_end),//
 						c.getLong(index_loadSize));
@@ -293,6 +284,9 @@ public class DownloadRecorder {
 			index = c.getColumnIndex(TABLE_DownloadFile.file_size);
 			file.setFileSize(c.getLong(index));
 			//
+			index = c.getColumnIndex(TABLE_DownloadFile.loaded_size);
+			file.setLoadedSize(c.getLong(index));
+			//
 			index = c.getColumnIndex(TABLE_DownloadFile.status);
 			file.setStatus(c.getInt(index));
 		}
@@ -345,15 +339,17 @@ public class DownloadRecorder {
 			//
 			int indexSourceUrl = c
 					.getColumnIndex(TABLE_DownloadFile.file_source_url);
-			int indexFileName = c.getColumnIndex(TABLE_DownloadFile.file_name);
-			int indexFileSize = c.getColumnIndex(TABLE_DownloadFile.file_size);
-			int indexStatus = c.getColumnIndex(TABLE_DownloadFile.status);
+			int iFileName = c.getColumnIndex(TABLE_DownloadFile.file_name);
+			int iFileSize = c.getColumnIndex(TABLE_DownloadFile.file_size);
+			int iLoadedSize = c.getColumnIndex(TABLE_DownloadFile.loaded_size);
+			int iStatus = c.getColumnIndex(TABLE_DownloadFile.status);
 			do {
 				DownloadFile f = new DownloadFile();
 				f.setSourceUrl(c.getString(indexSourceUrl));
-				f.setFileName(c.getString(indexFileName));
-				f.setFileSize(c.getLong(indexFileSize));
-				f.setStatus(c.getInt(indexStatus));
+				f.setFileName(c.getString(iFileName));
+				f.setFileSize(c.getLong(iFileSize));
+				f.setLoadedSize(c.getLong(iLoadedSize));
+				f.setStatus(c.getInt(iStatus));
 				out.add(f);
 			} while (c.moveToNext());
 		}
@@ -362,10 +358,9 @@ public class DownloadRecorder {
 		askCloseDatabase(db);
 	}
 
-	private void copy(ContentValues cv, DownloadBlock b, String outPath) {
+	private void copy(ContentValues cv, DownloadBlock b) {
 		cv.put(TABLE_DownloadBlock._ID, b.getId());
 		cv.put(TABLE_DownloadBlock.file_source_url, b.getSourceUrl());
-		cv.put(TABLE_DownloadBlock.out_file_path, outPath);
 		cv.put(TABLE_DownloadBlock.block_start, b.getStart());
 		cv.put(TABLE_DownloadBlock.block_end, b.getEnd());
 		cv.put(TABLE_DownloadBlock.block_loaded_size, b.getLoadedSize());
@@ -375,6 +370,7 @@ public class DownloadRecorder {
 		cv.put(TABLE_DownloadFile.file_source_url, file.getSourceUrl());
 		cv.put(TABLE_DownloadFile.file_name, file.getFileName());
 		cv.put(TABLE_DownloadFile.file_size, file.getFileSize());
+		cv.put(TABLE_DownloadFile.loaded_size, file.getLoadedSize());
 		cv.put(TABLE_DownloadFile.status, file.getStatus());
 	}
 

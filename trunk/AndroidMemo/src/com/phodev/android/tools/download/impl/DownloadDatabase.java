@@ -20,6 +20,7 @@ public class DownloadDatabase extends SQLiteOpenHelper {
 		public static final String file_source_url = "file_source_url";
 		public static final String file_name = "file_name";
 		public static final String file_size = "file_size";
+		public static final String loaded_size = "loaded_size";
 		public static final String status = "status";
 
 		public static final String _table_create_sql = "CREATE TABLE "
@@ -29,6 +30,7 @@ public class DownloadDatabase extends SQLiteOpenHelper {
 				+ file_source_url + " TEXT,"//
 				+ file_name + " TEXT,"//
 				+ file_size + " LONG,"//
+				+ loaded_size + " LONG,"//
 				+ status + " INTEGER"//
 				+ ");";
 	}
@@ -36,7 +38,6 @@ public class DownloadDatabase extends SQLiteOpenHelper {
 	public static final class TABLE_DownloadBlock implements BaseColumns {
 		public static final String _table_name = "download_block";
 		public static final String file_source_url = "file_source_url";
-		public static final String out_file_path = "out_file_path";
 		public static final String block_start = "block_start";
 		public static final String block_end = "block_end";
 		public static final String block_loaded_size = "block_loaded_size";
@@ -46,7 +47,6 @@ public class DownloadDatabase extends SQLiteOpenHelper {
 				" ("//
 				+ _ID + " TEXT PRIMARY KEY,"//
 				+ file_source_url + " TEXT,"//
-				+ out_file_path + " TEXT,"//
 				+ block_start + " LONG,"//
 				+ block_end + " LONG,"//
 				+ block_loaded_size + " INTEGER"//

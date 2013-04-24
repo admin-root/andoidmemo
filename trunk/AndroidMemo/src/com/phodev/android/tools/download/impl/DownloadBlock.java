@@ -1,29 +1,25 @@
 package com.phodev.android.tools.download.impl;
 
-import java.io.File;
+import android.text.TextUtils;
 
 import com.phodev.android.tools.download.DownloadFile;
 
 /**
  * 下载块
  * 
- * @author skg
- * 
  */
 public class DownloadBlock {
 	private String id;
 	private DownloadFile downloadFile;
 	private String sourceUrl;
-	private File outFile;
 	private long start;
 	private long end;
 	private long loadedSize;
 
-	public DownloadBlock(DownloadFile dFile, String sourceUrl, File outFile,
-			long start, long end, long loadedSize) {
+	public DownloadBlock(DownloadFile dFile, String sourceUrl, long start,
+			long end, long loadedSize) {
 		this.downloadFile = dFile;
 		this.sourceUrl = sourceUrl;
-		this.outFile = outFile;
 		this.start = start;
 		this.end = end;
 		this.loadedSize = loadedSize;
@@ -50,10 +46,6 @@ public class DownloadBlock {
 		return sourceUrl;
 	}
 
-	public File getOutFile() {
-		return outFile;
-	}
-
 	public long getStart() {
 		return start;
 	}
@@ -64,6 +56,31 @@ public class DownloadBlock {
 
 	public long getLoadedSize() {
 		return loadedSize;
+	}
+
+	//
+	/**
+	 * 是否是无效的
+	 */
+	public boolean isInvalid() {
+		return downloadFile == null || TextUtils.isEmpty(sourceUrl)
+				|| start < 0 || end < 0 || end < start;
+	}
+
+	/**
+	 * 是否已经完成加载
+	 * 
+	 * @return
+	 */
+	public boolean isCompleteLoad() {
+		return loadedSize > end - start;
+	}
+
+	@Override
+	public String toString() {
+		return "DownloadBlock [id=" + id + ", sourceUrl=" + sourceUrl
+				+ ", start=" + start + ", end=" + end + ", loadedSize="
+				+ loadedSize + "]";
 	}
 
 }
