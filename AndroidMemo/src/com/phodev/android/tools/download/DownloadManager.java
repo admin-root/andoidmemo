@@ -5,11 +5,8 @@ import java.util.List;
 /**
  * 下载任务管理器
  * 
- * @author skg
- * 
  */
 public interface DownloadManager {
-
 	/**
 	 * 启动下载
 	 * 
@@ -24,6 +21,16 @@ public interface DownloadManager {
 	 * @return
 	 */
 	public boolean startAll();
+
+	//
+	// /**
+	// *
+	// * 如果任务存在则会删除现有数据，重新加载，如果任务不存在则创建任务并开始加载
+	// *
+	// * @param url
+	// * @return
+	// */
+	// public boolean reload(String url);
 
 	/**
 	 * 停止下载
@@ -86,21 +93,4 @@ public interface DownloadManager {
 	 */
 	public void unregisterDownloadListener(DownloadListener l);
 
-	public interface DownloadListener {
-		/**
-		 * 下载任务的Add,Remove,Start,Stop...
-		 * 
-		 * @param taskId
-		 * @param newStatus
-		 */
-		public void onStatusChanged(long taskId, int newStatus);
-
-		/**
-		 * 下载任务进度的变化
-		 * 
-		 * @param taskId
-		 * @param newProgrees
-		 */
-		public void onProgressChanged(long taskId, int newProgrees, int newSpeed);
-	}
 }

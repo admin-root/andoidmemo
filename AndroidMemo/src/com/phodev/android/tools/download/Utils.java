@@ -6,6 +6,10 @@ import java.net.ProtocolException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.net.NetworkInfo.State;
 import android.os.Environment;
 import android.util.Log;
 
@@ -20,7 +24,7 @@ public class Utils {
 		}
 		configCommonHeader(conn, referer);
 		conn.setRequestProperty("Range", "bytes=" + startPos + "-" + endPos);
-		conn.setRequestProperty("Accept-Encoding", "gzip,deflate");
+		// conn.setRequestProperty("Accept-Encoding", "gzip,deflate");
 	}
 
 	public static void configCommonHeader(HttpURLConnection conn, String referer) {
@@ -90,6 +94,7 @@ public class Utils {
 		}
 		return getDownloadDir().getAbsolutePath() + File.separator + fileName;
 	}
+
 	//
 	// public static File createFile(String fileName, boolean tryCreate) {
 	// String fileFullPath = makeAbsolutePath(fileName);
@@ -106,4 +111,28 @@ public class Utils {
 	// }
 	// return file;
 	// }
+	//
+	public static boolean isNetworkAvailable(Context context) {
+		ConnectivityManager cm = (ConnectivityManager) context
+				.getSystemService(Context.CONNECTIVITY_SERVICE);
+		NetworkInfo info = cm.getActiveNetworkInfo();
+		return (info != null && info.isConnected());
+	}
+
+	public static boolean isWifiNetworkAvailable(Context context) {
+		ConnectivityManager cm = (ConnectivityManager) context
+				.getSystemService(Context.CONNECTIVITY_SERVICE);
+		State wifi = cm.getNetworkInfo(ConnectivityManager.TYPE_WIFI)
+				.getState();
+		return (wifi == State.CONNECTED);
+	}
+
+	public static boolean isSDCardMounted() {
+		if (Environment.getExternalStorageState().equals(
+				Environment.MEDIA_MOUNTED)) {
+			return true;
+		} else {
+			return false;
+		}
+	}
 }

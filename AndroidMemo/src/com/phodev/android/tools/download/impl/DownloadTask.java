@@ -9,14 +9,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import android.content.Context;
-import android.util.Log;
 
 import com.phodev.android.tools.download.Constants;
 import com.phodev.android.tools.download.DownloadFile;
@@ -26,20 +24,18 @@ import com.phodev.android.tools.download.impl.BlockDownloader.BlockRunnerListene
 /**
  * 管理一个下载任务
  * 
- * @author skg
- * 
  */
 public class DownloadTask {
 	private List<DownloadBlock> blocks = new ArrayList<DownloadBlock>();
 	private ExecutorService executor;
 	private DownloadFile downloadFile;
-	private DownloadTaskListener taskListener;
+	private TaskListener taskListener;
 	private boolean isRunning = false;
-	private Future<TaskRunner> curTaskFuture;
+	private TaskRunner currentRunner;
 	private Context context;
 
 	public DownloadTask(Context context, ExecutorService executor,
-			DownloadFile df, DownloadTaskListener l) {
+			DownloadFile df, TaskListener l) {
 		this.context = context;
 		this.executor = executor;
 		downloadFile = df;
@@ -54,8 +50,10 @@ public class DownloadTask {
 		if (executor == null || executor.isShutdown()) {
 			return false;
 		}
-		TaskRunner taskRunner = new TaskRunner();
-		curTaskFuture = executor.submit(taskRunner, taskRunner);
+		isRunning = true;
+		currentRunner = new TaskRunner();
+		Future<TaskRunner> f = executor.submit(currentRunner, currentRunner);
+		currentRunner.boundFutrue(f);
 		return true;
 	}
 
@@ -64,22 +62,11 @@ public class DownloadTask {
 		if (!isRunning) {
 			return true;
 		}
-		if (curTaskFuture != null) {
-			try {
-				TaskRunner runner = curTaskFuture.get();
-				if (runner != null) {
-					runner.stop();
-				}
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			} catch (ExecutionException e) {
-				e.printStackTrace();
-			}
-			if (!curTaskFuture.isCancelled()) {
-				curTaskFuture.cancel(true);
-			}
-			isRunning = false;
+		if (currentRunner != null) {
+			currentRunner.stop();
 		}
+		currentRunner = null;
+		isRunning = false;
 		return true;
 	}
 
@@ -96,29 +83,49 @@ public class DownloadTask {
 	private BlockRunnerListener blockListener = new BlockRunnerListener() {
 
 		@Override
-		public synchronized void onBlockLoadFailed(DownloadBlock block,
-				int errorCode) {
-			// Block下载失败,判断原因看是否需要开启线程继续下载
-			// 1,如果是网络部可用，则停止全部下载,并通知外部监听
-			// 2,如果是连接超时则尝试重新加载
+		public void onBlockIncrease(BlockDownloader loader,
+				DownloadBlock block, int increase) {
+			// 块下载任务进度增加,累加当符合条件的时候同意向外通知进度
+			blockTotalIncrease += increase;
 		}
 
 		@Override
-		public synchronized void onBlockLoadDone(DownloadBlock block) {
+		public void onBlockLoadDone(BlockDownloader loader, DownloadBlock block) {
 			// 块下载完成，通常情况下这个时候不需要做特殊处理
 		}
 
 		@Override
-		public synchronized void onBlockIncrease(DownloadBlock block,
-				int increase) {
-			// 块下载任务进度增加,累加当符合条件的时候同意向外通知进度
-			blockTotalIncrease += increase;
+		public void onBlockLoadFailed(BlockDownloader loader,
+				DownloadBlock block, int errorCode) {
+			// Block下载失败,判断原因看是否需要开启线程继续下载
+			// 1,如果是网络部可用，则停止全部下载,并通知外部监听
+			// 2,如果是连接超时则尝试重新加载
+			switch (errorCode) {
+			case ERROR_CAN_NOT_FIND_OUT_FILE:
+				// 可能是sdcard不存在，或者是
+				break;
+			default:
+				break;
+			}
 		}
+
+		@Override
+		public void onUnkonwIOException(BlockDownloader loader, IOException ex) {
+
+		}
+
 	};
 
+	private List<BlockDownloader> loaders = new ArrayList<BlockDownloader>();
+	private DownloadRecorder recorder = DownloadRecorder.getInstance();
+
 	class TaskRunner implements Runnable {
-		List<Future<BlockDownloader>> loaders = new ArrayList<Future<BlockDownloader>>();
 		private boolean interrupt = false;
+		private Future<TaskRunner> futrue;
+
+		public void boundFutrue(Future<TaskRunner> futrue) {
+			this.futrue = futrue;
+		}
 
 		/**
 		 * 取消任务
@@ -128,54 +135,69 @@ public class DownloadTask {
 				return;
 			}
 			interrupt = true;
-			for (Future<BlockDownloader> f : loaders) {
-				if (f != null && !f.isCancelled() && !f.isDone()) {
-					try {
-						f.get().interrupt();
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					} catch (ExecutionException e) {
-						e.printStackTrace();
+			synchronized (loaders) {
+				for (BlockDownloader b : loaders) {
+					if (b != null) {
+						b.interrupt();
 					}
-					f.cancel(true);
 				}
+				loaders.clear();
 			}
-			loaders.clear();
+			if (futrue != null && !futrue.isCancelled()) {
+				futrue.cancel(true);
+			}
 		}
 
 		@Override
 		public void run() {
+			if (downloadFile.getStatus() != DownloadFile.status_download_loading) {
+				downloadFile.setStatus(DownloadFile.status_download_loading);
+				recorder.updateFile(context, downloadFile);
+				notifyFileStatusChange();
+			}
 			String sourceUrl = downloadFile.getSourceUrl();
 			URL url = null;
 			try {
 				url = new URL(sourceUrl);
 			} catch (MalformedURLException e) {
 				e.printStackTrace();
-				// error
+				onDownloadError(TaskListener.TASK_ERROR_MALFORMED_URL);
 				return;
 			}
 			synchronized (blocks) {
-				// loadBlocksFromCache
-				DownloadRecorder dr = DownloadRecorder.getInstance();
-				dr.getBocks(context, blocks, downloadFile);
-				//
-				if (blocks.size() <= 0) {
-					createBlockFromNetFile(downloadFile, url);
+				if (blocks.isEmpty()) {
+					// loadBlocksFromCache
+					recorder.getBocks(context, blocks, downloadFile);
+					//
 					if (blocks.size() <= 0) {
-						// error
-						return;
+						try {
+							createBlockFromNetFile(downloadFile, url);
+						} catch (CreateBlockException e) {
+							e.printStackTrace();
+						} finally {
+							if (blocks.size() <= 0) {
+								onDownloadError(TaskListener.TASK_ERROR_INIT_BLOCKS_FAILED);
+								return;
+							}
+						}
 					}
 				}
 			}
 			//
-			for (DownloadBlock block : blocks) {
-				if (executor.isShutdown()) {
-					// error
-					break;
+			synchronized (loaders) {
+				for (DownloadBlock b : blocks) {
+					if (executor.isShutdown()) {
+						onDownloadError(TaskListener.TASK_ERROR_THREAD_POOL_SHUTDOWN);
+						break;
+					}
+					if (!b.isCompleteLoad()) {
+						BlockDownloader bder = new BlockDownloader(
+								blockListener, b);
+						Future<BlockDownloader> f = executor.submit(bder, bder);
+						bder.boundFuture(f);
+						loaders.add(bder);
+					}
 				}
-				BlockDownloader bder = new BlockDownloader(blockListener, block);
-				Future<BlockDownloader> f = executor.submit(bder, bder);
-				loaders.add(f);
 			}
 			//
 			loopUpdateDownloadInfo();
@@ -187,14 +209,15 @@ public class DownloadTask {
 		 * @param file
 		 * @param url
 		 */
-		private void createBlockFromNetFile(DownloadFile file, URL url) {
+		private void createBlockFromNetFile(DownloadFile file, URL url)
+				throws CreateBlockException {
 			if (url == null) {
-				return;
+				throw new CreateBlockException();
+				// return;
 			}
 			try {
 				// 分段
 				final int threadCount = Constants.thread_count;
-				long perBlockSize = file.getFileSize() / threadCount;
 				blocks.clear();
 				//
 				HttpURLConnection c = (HttpURLConnection) url.openConnection();
@@ -204,12 +227,16 @@ public class DownloadTask {
 				if (c.getResponseCode() == 200) {
 					file.setFileSize(c.getContentLength());
 				} else {
-					return;
+					throw new CreateBlockException();
+					// return;
 				}
+				long perBlockSize = file.getFileSize() / threadCount;
 				String filename = getFileName(c, file.getSourceUrl());
 				file.setFileName(filename);
-				File outFile = Utils.createDownloadOutFile(filename);
-				if (!outFile.exists()) {
+				recorder.updateFile(context, file);
+				//
+				File outFile = file.getFile();
+				if (outFile != null && !outFile.exists()) {
 					outFile.createNewFile();
 				}
 				// RandomAccessFile randOut = new RandomAccessFile(outFile,
@@ -226,19 +253,18 @@ public class DownloadTask {
 					} else {
 						end = (i + 1) * perBlockSize;
 					}
-					DownloadBlock b = new DownloadBlock(file, sourceUrl,
-							outFile, start, end, 0);
+					DownloadBlock b = new DownloadBlock(file, sourceUrl, start,
+							end, 0);
 					blocks.add(b);
 				}
 				// 保存分段记录到数据库
 				if (!blocks.isEmpty()) {
-					DownloadRecorder.getInstance().addBlocks(context, blocks,
-							file.getSourceUrl());
+					recorder.addBlocks(context, blocks, file.getSourceUrl());
 				}
 			} catch (IOException e) {
 				e.printStackTrace();
 				blocks.clear();
-				// 保存分段记录到数据库
+				throw new CreateBlockException();
 			}
 		}
 
@@ -246,25 +272,62 @@ public class DownloadTask {
 			while (!interrupt) {
 				// 更新进度和速度//block进度的缓存
 				try {
-					Thread.sleep(900);
+					Thread.sleep(Constants.update_speed_interval_time);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
 				final int speed = blockTotalIncrease;
 				blockTotalIncrease = 0;
-				int loadedSize = 0;
+				long loadedSize = 0;
 				for (DownloadBlock block : blocks) {
 					loadedSize += block.getLoadedSize();
 				}
-				int tt = 1024 * 1024;
-				long totalSize = downloadFile.getFileSize() / tt;
-				Log.e("ttt", (loadedSize / tt) + "/" + totalSize + " speed:"
-						+ speed / 1024 + "kb/s");
+				downloadFile.setLoadedSize(loadedSize);
+				recorder.updateFile(context, downloadFile);
+				// DEBUG-start
+				// int tt = 1024 * 1024;
+				// long totalSize = downloadFile.getFileSize() / tt;
+				// Log.e("ttt", (loadedSize / tt) + "/" + totalSize + " speed:"
+				// + speed / 1024 + "kb/s");
+				// DEBUG-end
 
-				// 控制优化
-				DownloadRecorder.getInstance().updateBlockProgress(context,
-						blocks);
+				// TODO控制优化
+				recorder.updateBlockProgress(context, blocks);
+				if (taskListener != null) {
+					taskListener.onProgrees(downloadFile, loadedSize, speed);
+				}
+				// 判断是否下载完毕
+				if (loadedSize >= downloadFile.getFileSize()) {
+					recorder.removeBlocks(context, downloadFile.getSourceUrl());
+					downloadFile
+							.setStatus(DownloadFile.status_download_complete);
+					recorder.updateFile(context, downloadFile);
+					notifyFileStatusChange();
+					if (taskListener != null) {
+						taskListener.onDownloadDone(downloadFile);
+					}
+					stop();
+					break;
+				}
 			}
+		}
+	}
+
+	private void notifyFileStatusChange() {
+		if (taskListener != null) {
+			taskListener.onDownloadFileStatusChanged(downloadFile);
+		}
+	}
+
+	private void onDownloadError(int taskErrorCode) {
+		int oldStatus = downloadFile.getStatus();
+		downloadFile.setStatus(DownloadFile.status_download_error);
+		if (oldStatus != DownloadFile.status_download_error) {
+			recorder.updateFile(context, downloadFile);
+			notifyFileStatusChange();
+		}
+		if (taskListener != null) {
+			taskListener.onDownloadFailed(downloadFile, taskErrorCode);
 		}
 	}
 
@@ -291,13 +354,29 @@ public class DownloadTask {
 		return filename;
 	}
 
-	public interface DownloadTaskListener {
-		public void onDownloadIncrease(DownloadFile file, long loadedSize,
-				long speed);
+	public interface TaskListener {
+		/** 无效的URL */
+		public static final int TASK_ERROR_MALFORMED_URL = 0;
+		public static final int TASK_ERROR_INIT_BLOCKS_FAILED = 1;
+		public static final int TASK_ERROR_THREAD_POOL_SHUTDOWN = 2;
+
+		public void onProgrees(DownloadFile file, long loadedSize, int speed);
 
 		public void onDownloadDone(DownloadFile file);
 
-		public void onDownloadFailed(DownloadFile file);
+		public void onDownloadFailed(DownloadFile file, int errorCode);
+
+		public void onDownloadFileStatusChanged(DownloadFile file);
+	}
+
+	class CreateBlockException extends Exception {
+		private static final long serialVersionUID = 3459920816008528412L;
+
+		@Override
+		public String toString() {
+			return "CreateBlockException";
+		}
+
 	}
 
 }
