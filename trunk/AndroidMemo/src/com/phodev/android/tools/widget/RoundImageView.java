@@ -68,7 +68,6 @@ public class RoundImageView extends ImageView {
 		canvas.saveLayer(roundRect, zonePaint, Canvas.ALL_SAVE_FLAG);
 		canvas.drawRoundRect(roundRect, rect_adius, rect_adius, zonePaint);
 		//
-		maskPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
 		canvas.saveLayer(roundRect, maskPaint, Canvas.ALL_SAVE_FLAG);
 		super.draw(canvas);
 		canvas.restore();
