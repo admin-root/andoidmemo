@@ -4,8 +4,6 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.Path;
-import android.graphics.Path.Direction;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
@@ -30,7 +28,6 @@ public class RoundImageView extends ImageView {
 		init();
 	}
 
-	private final Path clipPath = new Path();
 	private final RectF roundRect = new RectF();
 	private float rect_adius = 6;
 	private final Paint maskPaint = new Paint();
@@ -59,8 +56,6 @@ public class RoundImageView extends ImageView {
 		int w = getWidth();
 		int h = getHeight();
 		roundRect.set(0, 0, w, h);
-		clipPath.reset();
-		clipPath.addRoundRect(roundRect, rect_adius, rect_adius, Direction.CW);
 	}
 
 	@Override
