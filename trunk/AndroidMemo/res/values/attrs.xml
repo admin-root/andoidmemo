@@ -12,5 +12,9 @@
         <attr name="border_enable" default="true" format="boolean" />
         <attr name="border_color" format="color" />
     </declare-styleable>
+    <declare-styleable name="DottedLineView">
+        <attr name="line_color" format="color" />
+        <attr name="line_stroke_width" format="dimension" />
+    </declare-styleable>
 
 </resources>
