@@ -10,7 +10,7 @@ import android.view.ViewGroup;
  * 
  */
 public interface ViewWraperConfig {
-	public boolean needCconfigWrapView();
+	public boolean needConfigWrapView();
 
 	public boolean isWrapViewShowable();
 
